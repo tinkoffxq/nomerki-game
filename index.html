@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Симулятор Номеров</title>
+    <title>Симулятор Номеров v5</title>
     <script src="https://telegram.org"></script>
     <style>
         body {
@@ -53,19 +53,19 @@
     <h3>🎰 Крутить Номера</h3>
     <div class="tarif-box">
         <div>🟢 Обычный<br><small style="color:#aaa">Цена: 3 000 ₽</small></div>
-        <button onclick="spin('common')">Крутить</button>
+        <button onclick="window.spin('common')">Крутить</button>
     </div>
     <div class="tarif-box">
         <div>🔵 Везучий<br><small style="color:#aaa">Цена: 10 000 ₽</small></div>
-        <button onclick="spin('lucky')">Крутить</button>
+        <button onclick="window.spin('lucky')">Крутить</button>
     </div>
     <div class="tarif-box">
         <div>🔥 Супер Везучий<br><small style="color:#aaa">Цена: 30 000 ₽</small></div>
-        <button onclick="spin('super')">Крутить</button>
+        <button onclick="window.spin('super')">Крутить</button>
     </div>
 
     <div class="result-box" id="result-container">
-        <div id="rarity-text" style="font-weight: bold; margin-bottom: 5px;">🎰 Добро пожаловать!</div>
+        <div id="rarity-text" style="font-weight: bold; margin-bottom: 5px;">🎰 Симулятор Готов!</div>
         <div class="plate" id="plate-text">А000АА 77</div>
     </div>
 
@@ -98,12 +98,11 @@
             "Легендарный": { price: 150000, emoji: "👑" }
         };
 
-        // Красивая поочередная анимация появления символов номера
         function animatePlateRoll(finalPlate) {
             const plateElement = document.getElementById("plate-text");
             const letters = "АВЕКМНОРСТУХ";
             let currentStep = 0;
-            const totalSteps = 15; // Длительность крутилки
+            const totalSteps = 12;
 
             const interval = setInterval(() => {
                 let randomPlate = 
@@ -118,12 +117,11 @@
 
                 if (currentStep >= totalSteps) {
                     clearInterval(interval);
-                    plateElement.innerText = finalPlate; // Показываем итоговый выбитый номер
+                    plateElement.innerText = finalPlate;
                 }
             }, 50);
         }
 
-        // Запуск анимации сразу при открытии страницы приложения
         window.onload = function() {
             animatePlateRoll("А777АА 777 RUS");
         };
@@ -150,8 +148,8 @@
             return "Обычный";
         }
 
-        function spin(tarifKey) {
-            document.getElementById("error-text").innerText = ""; // Очистка ошибок
+        window.spin = function(tarifKey) {
+            document.getElementById("error-text").innerText = "";
             const cost = tarifs[tarifKey].price;
             
             if (balance < cost) {
@@ -168,12 +166,11 @@
             document.getElementById("balance").innerText = balance.toLocaleString() + " ₽";
             document.getElementById("rarity-text").innerText = `${rarities[rarity].emoji} ${rarity}`;
             
-            // Запуск эффекта барабана для номера
             animatePlateRoll(plate);
             updateInventoryUI();
         }
 
-        function sell(index) {
+        window.sell = function(index) {
             document.getElementById("error-text").innerText = "";
             const item = inventory[index];
             balance += rarities[item.rarity].price;
@@ -194,7 +191,7 @@
                 container.innerHTML += `
                     <div class="inv-item">
                         <div><b>${item.plate}</b><br><small>${rarities[item.rarity].emoji} ${item.rarity}</small></div>
-                        <button style="background:#34c759; padding:5px 10px; font-size:12px;" onclick="sell(${index})">+${rarities[item.rarity].price.toLocaleString()} ₽</button>
+                        <button style="background:#34c759; padding:5px 10px; font-size:12px;" onclick="window.sell(${index})">+${rarities[item.rarity].price.toLocaleString()} ₽</button>
                     </div>
                 `;
             });
