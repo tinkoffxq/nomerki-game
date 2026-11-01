@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Симулятор Номеров</title>
+    <!-- Подключаем официальный скрипт Telegram Web App -->
+    <script src="https://telegram.org"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--tg-theme-bg-color, #1c1c1e);
+            color: var(--tg-theme-text-color, #ffffff);
+            margin: 0; padding: 15px; text-align: center;
+        }
+        .balance-card {
+            background: var(--tg-theme-secondary-bg-color, #2c2c2e);
+            padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .balance-amount { font-size: 24px; font-weight: bold; color: #34c759; margin-top: 5px; }
+        .tarif-box {
+            background: #2c2c2e; padding: 15px; border-radius: 12px; margin-bottom: 12px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        button {
+            background: #007aff; color: white; border: none; padding: 10px 16px;
+            border-radius: 8px; font-weight: bold; cursor: pointer;
+        }
+        button:active { opacity: 0.8; }
+        .result-box {
+            margin: 20px 0; min-height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .plate {
+            background: white; color: black; font-family: "Courier New", monospace; font-weight: bold;
+            font-size: 26px; padding: 5px 15px; border: 2px solid black; border-radius: 6px;
+            display: inline-block; letter-spacing: 2px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .inventory-list { text-align: left; background: #2c2c2e; padding: 10px; border-radius: 12px; max-height: 200px; overflow-y: auto; }
+        .inv-item { display: flex; justify-content: space-between; margin-bottom: 8px; background: #3a3a3c; padding: 8px; border-radius: 6px; align-items: center;}
+    </style>
+</head>
+<body>
+
+    <div class="balance-card">
+        <div>💵 Твой Баланс</div>
+        <div class="balance-amount" id="balance">20 000 ₽</div>
+    </div>
+
+    <h3>🎰 Крутить Номера</h3>
+    <div class="tarif-box">
+        <div>🟢 Обычный<br><small style="color:#aaa">Цена: 3 000 ₽</small></div>
+        <button onclick="spin('common')">Крутить</button>
+    </div>
+    <div class="tarif-box">
+        <div>🔵 Везучий<br><small style="color:#aaa">Цена: 10 000 ₽</small></div>
+        <button onclick="spin('lucky')">Крутить</button>
+    </div>
+    <div class="tarif-box">
+        <div>🔥 Супер Везучий<br><small style="color:#aaa">Цена: 30 000 ₽</small></div>
+        <button onclick="spin('super')">Крутить</button>
+    </div>
+
+    <div class="result-box" id="result-container" style="display: none;">
+        <div id="rarity-text" style="font-weight: bold; margin-bottom: 5px;"></div>
+        <div class="plate" id="plate-text">А000АА 77</div>
+    </div>
+
+    <h3>🎒 Мой Инвентарь</h3>
+    <div class="inventory-list" id="inventory">
+        <div style="color: #aaa; text-align: center;">Тут пока пусто</div>
+    </div>
+
+    <script>
+        // Инициализируем Telegram WebApp SDK
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Раскрываем окно на максимум
+
+        let balance = 20000;
+        let inventory = [];
+
+        const tarifs = {
+            common: { price: 3000, chances: [0.70, 0.20, 0.07, 0.02, 0.01] },
+            lucky: { price: 10000, chances: [0.30, 0.40, 0.20, 0.08, 0.02] },
+            super: { price: 30000, chances: [0.05, 0.15, 0.35, 0.30, 0.15] }
+        };
+
+        const rarities = {
+            "Обычный": { price: 1500, emoji: "⬜" },
+            "Редкий": { price: 5000, emoji: "🟦" },
+            "Сверхредкий": { price: 15000, emoji: "🟪" },
+            "Супер": { price: 50000, emoji: "🟧" },
+            "Легендарный": { price: 150000, emoji: "👑" }
+        };
+
+        function generatePlate() {
+            const letters = "АВЕКМНОРСТУХ";
+            const l1 = letters[Math.floor(Math.random() * letters.length)];
+            const l2 = letters[Math.floor(Math.random() * letters.length)];
+            const l3 = letters[Math.floor(Math.random() * letters.length)];
+            const num = Math.floor(100 + Math.random() * 900);
+            const regions = ["77", "99", "777", "199", "178", "50", "123"];
+            const reg = regions[Math.floor(Math.random() * regions.length)];
+            return `${l1}${num}${l2}${l3} ${reg}`;
+        }
+
+        function getRarity(chances) {
+            const r = Math.random();
+            let acc = 0;
+            const keys = ["Обычный", "Редкий", "Сверхредкий", "Супер", "Легендарный"];
+            for(let i=0; i<chances.length; i++) {
+                acc += chances[i];
+                if(r <= acc) return keys[i];
+            }
+            return keys[0];
+        }
+
+        function spin(tarifKey) {
+            const cost = tarifs[tarifKey].price;
+            if (balance < cost) {
+                alert("Недостаточно средств!");
+                return;
+            }
+            balance -= cost;
+            
+            const rarity = getRarity(tarifs[tarifKey].chances);
+            const plate = generatePlate();
+            
+            inventory.push({ plate, rarity });
+            
+            // Вывод на экран
+            document.getElementById("balance").innerText = balance.toLocaleString() + " ₽";
+            document.getElementById("result-container").style.display = "flex";
+            document.getElementById("rarity-text").innerText = `${rarities[rarity].emoji} ${rarity}`;
+            document.getElementById("plate-text").innerText = plate;
+            
+            updateInventoryUI();
+        }
+
+        function sell(index) {
+            const item = inventory[index];
+            balance += rarities[item.rarity].price;
+            inventory.splice(index, 1);
+            
+            document.getElementById("balance").innerText = balance.toLocaleString() + " ₽";
+            updateInventoryUI();
+        }
+
+        function updateInventoryUI() {
+            const container = document.getElementById("inventory");
+            if (inventory.length === 0) {
+                container.innerHTML = '<div style="color: #aaa; text-align: center;">Тут пока пусто</div>';
+                return;
+            }
+            container.innerHTML = "";
+            inventory.forEach((item, index) => {
+                container.innerHTML += `
+                    <div class="inv-item">
+                        <div><b>${item.plate}</b><br><small>${rarities[item.rarity].emoji} ${item.rarity}</small></div>
+                        <button style="background:#34c759; padding:5px 10px; font-size:12px;" onclick="sell(${index})">+${rarities[item.rarity].price} ₽</button>
+                    </div>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>
