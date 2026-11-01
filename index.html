@@ -25,18 +25,21 @@
         button {
             background: #007aff; color: white; border: none; padding: 10px 16px;
             border-radius: 8px; font-weight: bold; cursor: pointer;
+            transition: transform 0.1s;
         }
-        button:active { opacity: 0.8; }
+        button:active { transform: scale(0.95); opacity: 0.9; }
         .result-box {
             margin: 20px 0; min-height: 90px; display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
         .plate {
             background: white; color: black; font-family: "Courier New", monospace; font-weight: bold;
-            font-size: 26px; padding: 5px 15px; border: 2px solid black; border-radius: 6px;
+            font-size: 28px; padding: 5px 15px; border: 3px solid black; border-radius: 6px;
             display: inline-block; letter-spacing: 2px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            min-width: 180px; text-align: center;
         }
         .inventory-list { text-align: left; background: #2c2c2e; padding: 12px; border-radius: 12px; max-height: 250px; overflow-y: auto; margin-top: 10px; }
         .inv-item { display: flex; justify-content: space-between; margin-bottom: 8px; background: #3a3a3c; padding: 8px; border-radius: 6px; align-items: center;}
+        .error-msg { color: #ff3b30; font-size: 14px; margin-top: 5px; font-weight: bold; min-height: 20px; }
     </style>
 </head>
 <body>
@@ -44,6 +47,7 @@
     <div class="balance-card">
         <div>💵 Твой Баланс</div>
         <div class="balance-amount" id="balance">20 000 ₽</div>
+        <div class="error-msg" id="error-text"></div>
     </div>
 
     <h3>🎰 Крутить Номера</h3>
@@ -60,8 +64,8 @@
         <button onclick="spin('super')">Крутить</button>
     </div>
 
-    <div class="result-box" id="result-container" style="visibility: hidden;">
-        <div id="rarity-text" style="font-weight: bold; margin-bottom: 5px;"></div>
+    <div class="result-box" id="result-container">
+        <div id="rarity-text" style="font-weight: bold; margin-bottom: 5px;">🎰 Добро пожаловать!</div>
         <div class="plate" id="plate-text">А000АА 77</div>
     </div>
 
@@ -94,6 +98,36 @@
             "Легендарный": { price: 150000, emoji: "👑" }
         };
 
+        // Красивая поочередная анимация появления символов номера
+        function animatePlateRoll(finalPlate) {
+            const plateElement = document.getElementById("plate-text");
+            const letters = "АВЕКМНОРСТУХ";
+            let currentStep = 0;
+            const totalSteps = 15; // Длительность крутилки
+
+            const interval = setInterval(() => {
+                let randomPlate = 
+                    letters[Math.floor(Math.random() * letters.length)] +
+                    Math.floor(100 + Math.random() * 900) +
+                    letters[Math.floor(Math.random() * letters.length)] +
+                    letters[Math.floor(Math.random() * letters.length)] + " " +
+                    ["77", "99", "777", "50", "123"][Math.floor(Math.random() * 5)] + " RUS";
+                
+                plateElement.innerText = randomPlate;
+                currentStep++;
+
+                if (currentStep >= totalSteps) {
+                    clearInterval(interval);
+                    plateElement.innerText = finalPlate; // Показываем итоговый выбитый номер
+                }
+            }, 50);
+        }
+
+        // Запуск анимации сразу при открытии страницы приложения
+        window.onload = function() {
+            animatePlateRoll("А777АА 777 RUS");
+        };
+
         function generatePlate() {
             const letters = "АВЕКМНОРСТУХ";
             const l1 = letters[Math.floor(Math.random() * letters.length)];
@@ -117,9 +151,11 @@
         }
 
         function spin(tarifKey) {
+            document.getElementById("error-text").innerText = ""; // Очистка ошибок
             const cost = tarifs[tarifKey].price;
+            
             if (balance < cost) {
-                alert("Недостаточно средств на балансе!");
+                document.getElementById("error-text").innerText = "❌ Недостаточно средств на балансе!";
                 return;
             }
             balance -= cost;
@@ -130,14 +166,15 @@
             inventory.push({ plate, rarity });
             
             document.getElementById("balance").innerText = balance.toLocaleString() + " ₽";
-            document.getElementById("result-container").style.visibility = "visible";
             document.getElementById("rarity-text").innerText = `${rarities[rarity].emoji} ${rarity}`;
-            document.getElementById("plate-text").innerText = plate;
             
+            // Запуск эффекта барабана для номера
+            animatePlateRoll(plate);
             updateInventoryUI();
         }
 
         function sell(index) {
+            document.getElementById("error-text").innerText = "";
             const item = inventory[index];
             balance += rarities[item.rarity].price;
             inventory.splice(index, 1);
