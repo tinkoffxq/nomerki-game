@@ -72,7 +72,10 @@
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.expand();
+        if (tg) {
+            tg.ready();
+            tg.expand();
+        }
 
         let balance = 20000;
         let inventory = [];
@@ -106,11 +109,11 @@
             const r = Math.random();
             let acc = 0;
             const keys = ["Обычный", "Редкий", "Сверхредкий", "Супер", "Легендарный"];
-            for(let i=0; i<chances.length; i++) {
+            for(let i = 0; i < chances.length; i++) {
                 acc += chances[i];
                 if(r <= acc) return keys[i];
             }
-            return keys[0]; // Исправлено: фоллбэк на базовую редкость
+            return "Обычный";
         }
 
         function spin(tarifKey) {
