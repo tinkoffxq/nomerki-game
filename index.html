@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Симулятор Номеров</title>
-    <!-- Подключаем официальный скрипт Telegram Web App -->
     <script src="https://telegram.org"></script>
     <style>
         body {
@@ -12,6 +11,7 @@
             background-color: var(--tg-theme-bg-color, #1c1c1e);
             color: var(--tg-theme-text-color, #ffffff);
             margin: 0; padding: 15px; text-align: center;
+            -webkit-user-select: none; user-select: none;
         }
         .balance-card {
             background: var(--tg-theme-secondary-bg-color, #2c2c2e);
@@ -28,14 +28,14 @@
         }
         button:active { opacity: 0.8; }
         .result-box {
-            margin: 20px 0; min-height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            margin: 20px 0; min-height: 90px; display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
         .plate {
             background: white; color: black; font-family: "Courier New", monospace; font-weight: bold;
             font-size: 26px; padding: 5px 15px; border: 2px solid black; border-radius: 6px;
             display: inline-block; letter-spacing: 2px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        .inventory-list { text-align: left; background: #2c2c2e; padding: 10px; border-radius: 12px; max-height: 200px; overflow-y: auto; }
+        .inventory-list { text-align: left; background: #2c2c2e; padding: 12px; border-radius: 12px; max-height: 250px; overflow-y: auto; margin-top: 10px; }
         .inv-item { display: flex; justify-content: space-between; margin-bottom: 8px; background: #3a3a3c; padding: 8px; border-radius: 6px; align-items: center;}
     </style>
 </head>
@@ -60,7 +60,7 @@
         <button onclick="spin('super')">Крутить</button>
     </div>
 
-    <div class="result-box" id="result-container" style="display: none;">
+    <div class="result-box" id="result-container" style="visibility: hidden;">
         <div id="rarity-text" style="font-weight: bold; margin-bottom: 5px;"></div>
         <div class="plate" id="plate-text">А000АА 77</div>
     </div>
@@ -71,9 +71,8 @@
     </div>
 
     <script>
-        // Инициализируем Telegram WebApp SDK
         const tg = window.Telegram.WebApp;
-        tg.expand(); // Раскрываем окно на максимум
+        tg.expand();
 
         let balance = 20000;
         let inventory = [];
@@ -97,10 +96,10 @@
             const l1 = letters[Math.floor(Math.random() * letters.length)];
             const l2 = letters[Math.floor(Math.random() * letters.length)];
             const l3 = letters[Math.floor(Math.random() * letters.length)];
-            const num = Math.floor(100 + Math.random() * 900);
-            const regions = ["77", "99", "777", "199", "178", "50", "123"];
+            const num = String(Math.floor(100 + Math.random() * 900));
+            const regions = ["77", "99", "777", "199", "178", "50", "123", "799"];
             const reg = regions[Math.floor(Math.random() * regions.length)];
-            return `${l1}${num}${l2}${l3} ${reg}`;
+            return `${l1}${num}${l2}${l3} ${reg} RUS`;
         }
 
         function getRarity(chances) {
@@ -111,13 +110,13 @@
                 acc += chances[i];
                 if(r <= acc) return keys[i];
             }
-            return keys[0];
+            return keys[0]; // Исправлено: фоллбэк на базовую редкость
         }
 
         function spin(tarifKey) {
             const cost = tarifs[tarifKey].price;
             if (balance < cost) {
-                alert("Недостаточно средств!");
+                alert("Недостаточно средств на балансе!");
                 return;
             }
             balance -= cost;
@@ -127,9 +126,8 @@
             
             inventory.push({ plate, rarity });
             
-            // Вывод на экран
             document.getElementById("balance").innerText = balance.toLocaleString() + " ₽";
-            document.getElementById("result-container").style.display = "flex";
+            document.getElementById("result-container").style.visibility = "visible";
             document.getElementById("rarity-text").innerText = `${rarities[rarity].emoji} ${rarity}`;
             document.getElementById("plate-text").innerText = plate;
             
@@ -156,7 +154,7 @@
                 container.innerHTML += `
                     <div class="inv-item">
                         <div><b>${item.plate}</b><br><small>${rarities[item.rarity].emoji} ${item.rarity}</small></div>
-                        <button style="background:#34c759; padding:5px 10px; font-size:12px;" onclick="sell(${index})">+${rarities[item.rarity].price} ₽</button>
+                        <button style="background:#34c759; padding:5px 10px; font-size:12px;" onclick="sell(${index})">+${rarities[item.rarity].price.toLocaleString()} ₽</button>
                     </div>
                 `;
             });
